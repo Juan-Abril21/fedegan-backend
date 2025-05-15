@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew bootJar
 
       - name: Copy JAR and New Relic files into deployment folder
-        run:
+        run: |
           mkdir -p deployment/newrelic
           cp build/libs/*.jar deployment/fedegan.jar
           cp -r src/main/java/com/example/fedegan/newrelic/* deployment/newrelic/
