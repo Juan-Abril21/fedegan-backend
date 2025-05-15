@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnimalDTO {
-    private int animal_id;
-    private int finca_id;
+    private Long animal_id;
+    private Long finca_id;
     private String tipo_animal;
     private String raza;
     private String sexo;

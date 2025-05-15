@@ -1,5 +1,6 @@
 package com.example.fedegan.controller;
 
+import com.example.fedegan.dto.RegistroVacunacionDTO;
 import com.example.fedegan.orm.RegistroVacunacionORM;
 import com.example.fedegan.service.RegistroVacunacionService;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class RegistroVacunacionController {
 
     @GetMapping
     public ResponseEntity<?> obtenerRegistroVacunacion() {
-        List<RegistroVacunacionORM> registros = registroVacunacionService.obtenerRegistros();
+        List<RegistroVacunacionDTO> registros = registroVacunacionService.obtenerRegistros();
         if (registros.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontraron registros de vacunacion");
         } else {
