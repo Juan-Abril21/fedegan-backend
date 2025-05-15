@@ -28,73 +28,15 @@ jobs:
       
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      
-      # Paso 1: Descargar el agente de New Relic directamente
-      - name: Download New Relic Java Agent
-        run: |
-          mkdir -p newrelic
-          curl -o newrelic/newrelic.jar https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-agent.jar
-      
-      # Paso 2: Crear la configuración de New Relic
-      - name: Create New Relic configuration
-        run: |
-          cat > newrelic/newrelic.yml << 'EOL'
-          common: &default_settings
-            license_key: 'TU_CLAVE_DE_LICENCIA_AQUÍ'
-            app_name: FedeganAPI
-            distributed_tracing:
-              enabled: true
-            log_level: info
-            log_file_path: D:/home/LogFiles
-            log_file_name: newrelic_agent.log
-            transaction_tracer:
-              enabled: true
-              transaction_threshold: apdex_f
-            datastore_tracer:
-              database_name_reporting: true
-              instance_reporting: true
-            cross_application_tracer:
-              enabled: true
-          
-          development:
-            <<: *default_settings
-            app_name: FedeganAPI (Development)
-          
-          test:
-            <<: *default_settings
-            app_name: FedeganAPI (Test)
-            
-          production:
-            <<: *default_settings
-          EOL
         
-      # Paso 3: Construir la aplicación con Gradle
       - name: Build with Gradle
         run: ./gradlew bootJar
-
-      # Paso 4: Preparar el paquete de despliegue simple
-      - name: Prepare deployment package
-        run: |
-          mkdir -p deployment
-          
-          # Copiar el JAR con un nombre consistente
-          cp build/libs/*.jar deployment/app.jar
-          
-          # Copiar los archivos de New Relic
-          mkdir -p deployment/site/wwwroot/newrelic
-          cp newrelic/newrelic.jar deployment/site/wwwroot/newrelic/
-          cp newrelic/newrelic.yml deployment/site/wwwroot/newrelic/
       
-      # Paso 5: Crear el ZIP para deployment
-      - name: Create ZIP package
-        run: cd deployment && zip -r ../deployment.zip *
-
-      # Paso 6: Subir el artefacto para usar en el job de deploy
-      - name: Upload deployment package
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: java-app-zip
-          path: deployment.zip
+          name: java-app
+          path: '${{ github.workspace }}/build/libs/*.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -107,17 +49,28 @@ jobs:
       contents: read #This is required for actions/checkout
   
     steps:
-      # Paso 1: Descargar el artefacto del job anterior
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: java-app-zip
+          name: java-app
       
-      # Paso 2: Mostrar la estructura del ZIP para verificar
       - name: Display structure of downloaded files
-        run: unzip -l deployment.zip
+        run: ls -R
       
-      # Paso 3: Login a Azure
+      - name: Find main JAR file
+        id: find-jar
+        run: |
+          # Buscar el JAR ejecutable (sin el sufijo -plain.jar)
+          MAIN_JAR=$(find . -name "fedegan-*.jar" -not -name "*-plain.jar" | head -n 1)
+          
+          # Si no se encuentra, usar el JAR plain (aunque no sea lo ideal)
+          if [ -z "$MAIN_JAR" ]; then
+            MAIN_JAR=$(find . -name "fedegan-*.jar" | head -n 1)
+          fi
+          
+          echo "Found JAR: $MAIN_JAR"
+          echo "JAR_FILE=$MAIN_JAR" >> $GITHUB_ENV
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -125,29 +78,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_1B48AF1FC5134E3197572B01AC9D8732 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D9109122A0DB4A7B86DC33ACED6BEE55 }}
       
-      # Paso 4: Desplegar a Azure Web App
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'FedeganAPI'
           slot-name: 'Production'
-          package: deployment.zip
-          
-      # Paso 5: Configurar los settings de la App
-      - name: Configure App Settings
-        uses: azure/appservice-settings@v1
-        with:
-          app-name: 'FedeganAPI'
-          app-settings-json: '[
-            {
-              "name": "JAVA_OPTS", 
-              "value": "-javaagent:D:\\home\\site\\wwwroot\\newrelic\\newrelic.jar", 
-              "slotSetting": false
-            },
-            {
-              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE", 
-              "value": "true", 
-              "slotSetting": false
-            }
-          ]'
+          package: ${{ env.JAR_FILE }}
