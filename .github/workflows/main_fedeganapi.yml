@@ -32,21 +32,61 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew bootJar
 
-      - name: Copy JAR and New Relic files into deployment folder
+      - name: Prepare deployment package
         run: |
+          # Crear la estructura del deployment
+          mkdir -p deployment
+          # Copiar el JAR con un nombre fijo para fácil referencia
+          cp build/libs/*.jar deployment/app.jar
+          # Copiar archivos de New Relic
           mkdir -p deployment/newrelic
-          cp build/libs/*.jar deployment/fedegan.jar
           cp -r src/main/java/com/example/fedegan/newrelic/* deployment/newrelic/
+          
+          # Crear startup script para asegurar que New Relic se carga correctamente
+          cat > deployment/startup.sh << 'EOL'
+          #!/bin/bash
+          
+          # Definir las opciones de Java con New Relic
+          export JAVA_OPTS="-javaagent:/home/site/wwwroot/newrelic/newrelic.jar"
+          
+          # Mostrar información para depuración
+          echo "Starting application with New Relic agent"
+          echo "JAVA_OPTS: $JAVA_OPTS"
+          ls -la /home/site/wwwroot/newrelic/
+          
+          # Iniciar la aplicación
+          java $JAVA_OPTS -jar /home/site/wwwroot/app.jar
+          EOL
+          
+          # Hacer el script ejecutable
+          chmod +x deployment/startup.sh
+          
+          # Crear archivo web.config para Azure App Service
+          cat > deployment/web.config << 'EOL'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <configuration>
+            <system.webServer>
+              <handlers>
+                <add name="httpPlatformHandler" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified" />
+              </handlers>
+              <httpPlatform processPath="%HOME%\site\wwwroot\startup.sh"
+                            arguments=""
+                            stdoutLogEnabled="true"
+                            stdoutLogFile="%HOME%\LogFiles\stdout"
+                            startupTimeLimit="60">
+              </httpPlatform>
+            </system.webServer>
+          </configuration>
+          EOL
 
-      - name: Crear ZIP del paquete
-        run: zip -r deployment.zip deployment/
+      - name: Create ZIP package
+        run: cd deployment && zip -r ../deployment.zip *
 
       - name: Upload deployment package
         uses: actions/upload-artifact@v4
         with:
           name: java-app-zip
           path: deployment.zip
-
 
   deploy:
     runs-on: ubuntu-latest
@@ -63,26 +103,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app-zip
-
-      - name: Mostrar archivos descargados
-        run: ls -la
       
       - name: Display structure of downloaded files
-        run: ls -R
-      
-      - name: Find main JAR file
-        id: find-jar
-        run: |
-          # Buscar el JAR ejecutable (sin el sufijo -plain.jar)
-          MAIN_JAR=$(find . -name "fedegan-*.jar" -not -name "*-plain.jar" | head -n 1)
-          
-          # Si no se encuentra, usar el JAR plain (aunque no sea lo ideal)
-          if [ -z "$MAIN_JAR" ]; then
-            MAIN_JAR=$(find . -name "fedegan-*.jar" | head -n 1)
-          fi
-          
-          echo "Found JAR: $MAIN_JAR"
-          echo "JAR_FILE=$MAIN_JAR" >> $GITHUB_ENV
+        run: unzip -l deployment.zip
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -98,3 +121,20 @@ jobs:
           app-name: 'FedeganAPI'
           slot-name: 'Production'
           package: deployment.zip
+          
+      - name: Configure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'FedeganAPI'
+          app-settings-json: '[
+            {
+              "name": "JAVA_TOOL_OPTIONS", 
+              "value": "-javaagent:/home/site/wwwroot/newrelic/newrelic.jar", 
+              "slotSetting": false
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE", 
+              "value": "true", 
+              "slotSetting": false
+            }
+          ]'
