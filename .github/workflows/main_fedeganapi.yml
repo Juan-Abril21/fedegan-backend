@@ -30,7 +30,7 @@ jobs:
         run: chmod +x gradlew
         
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew bootJar
       
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -54,6 +54,23 @@ jobs:
         with:
           name: java-app
       
+      - name: Display structure of downloaded files
+        run: ls -R
+      
+      - name: Find main JAR file
+        id: find-jar
+        run: |
+          # Buscar el JAR ejecutable (sin el sufijo -plain.jar)
+          MAIN_JAR=$(find . -name "fedegan-*.jar" -not -name "*-plain.jar" | head -n 1)
+          
+          # Si no se encuentra, usar el JAR plain (aunque no sea lo ideal)
+          if [ -z "$MAIN_JAR" ]; then
+            MAIN_JAR=$(find . -name "fedegan-*.jar" | head -n 1)
+          fi
+          
+          echo "Found JAR: $MAIN_JAR"
+          echo "JAR_FILE=$MAIN_JAR" >> $GITHUB_ENV
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -67,4 +84,4 @@ jobs:
         with:
           app-name: 'FedeganAPI'
           slot-name: 'Production'
-          package: '*.jar'
+          package: ${{ env.JAR_FILE }}
