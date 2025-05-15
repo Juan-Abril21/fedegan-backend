@@ -31,6 +31,18 @@ jobs:
         
       - name: Build with Gradle
         run: ./gradlew bootJar
+
+      - name: Copy JAR and New Relic files into deployment folder
+        run: |
+          mkdir -p deployment/newrelic
+          cp build/libs/*.jar deployment/fedegan.jar
+          cp -r newrelic/* deployment/newrelic/
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-app
+          path: deployment/
       
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -84,4 +96,4 @@ jobs:
         with:
           app-name: 'FedeganAPI'
           slot-name: 'Production'
-          package: ${{ env.JAR_FILE }}
+          package: deployment.zip
