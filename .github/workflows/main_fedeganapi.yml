@@ -42,24 +42,19 @@ jobs:
           mkdir -p deployment/newrelic
           cp -r src/main/java/com/example/fedegan/newrelic/* deployment/newrelic/
           
-          # Crear startup script para asegurar que New Relic se carga correctamente
-          cat > deployment/startup.sh << 'EOL'
-          #!/bin/bash
+          # Crear script .bat para Windows (Azure App Service usa Windows)
+          cat > deployment/startup.bat << 'EOL'
+          @echo off
+          echo Starting application with New Relic agent
+          echo Current directory:
+          cd
+          echo Files in newrelic directory:
+          dir %HOME%\site\wwwroot\newrelic
           
-          # Definir las opciones de Java con New Relic
-          export JAVA_OPTS="-javaagent:/home/site/wwwroot/newrelic/newrelic.jar"
-          
-          # Mostrar información para depuración
-          echo "Starting application with New Relic agent"
-          echo "JAVA_OPTS: $JAVA_OPTS"
-          ls -la /home/site/wwwroot/newrelic/
-          
-          # Iniciar la aplicación
-          java $JAVA_OPTS -jar /home/site/wwwroot/app.jar
+          java -javaagent:"%HOME%\site\wwwroot\newrelic\newrelic.jar" -jar "%HOME%\site\wwwroot\app.jar"
           EOL
           
-          # Hacer el script ejecutable
-          chmod +x deployment/startup.sh
+          # Hacer el script ejecutable (no necesario para .bat)
           
           # Crear archivo web.config para Azure App Service
           cat > deployment/web.config << 'EOL'
@@ -69,11 +64,10 @@ jobs:
               <handlers>
                 <add name="httpPlatformHandler" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified" />
               </handlers>
-              <httpPlatform processPath="%HOME%\site\wwwroot\startup.sh"
+              <httpPlatform processPath="%HOME%\site\wwwroot\startup.bat"
                             arguments=""
                             stdoutLogEnabled="true"
-                            stdoutLogFile="%HOME%\LogFiles\stdout"
-                            startupTimeLimit="60">
+                            stdoutLogFile="%HOME%\LogFiles\stdout">
               </httpPlatform>
             </system.webServer>
           </configuration>
@@ -129,7 +123,7 @@ jobs:
           app-settings-json: '[
             {
               "name": "JAVA_TOOL_OPTIONS", 
-              "value": "-javaagent:/home/site/wwwroot/newrelic/newrelic.jar", 
+              "value": "-javaagent:%HOME%\\site\\wwwroot\\newrelic\\newrelic.jar", 
               "slotSetting": false
             },
             {
