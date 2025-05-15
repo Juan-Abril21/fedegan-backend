@@ -38,11 +38,15 @@ jobs:
           cp build/libs/*.jar deployment/fedegan.jar
           cp -r src/main/java/com/example/fedegan/newrelic/* deployment/newrelic/
 
+      - name: Crear ZIP del paquete
+        run: zip -r deployment.zip deployment/
+
       - name: Upload deployment package
         uses: actions/upload-artifact@v4
         with:
-          name: java-app
-          path: deployment/
+          name: java-app-zip
+          path: deployment.zip
+
 
   deploy:
     runs-on: ubuntu-latest
@@ -58,7 +62,10 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: java-app
+          name: java-app-zip
+
+      - name: Mostrar archivos descargados
+        run: ls -la
       
       - name: Display structure of downloaded files
         run: ls -R
