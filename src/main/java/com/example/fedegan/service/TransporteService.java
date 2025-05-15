@@ -1,10 +1,12 @@
 package com.example.fedegan.service;
 
+import com.example.fedegan.dto.TransporteDTO;
 import com.example.fedegan.orm.TransporteORM;
 import com.example.fedegan.respository.TransporteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransporteService {
@@ -15,8 +17,16 @@ public class TransporteService {
         this.transporteRepository = transporteRepository;
     }
 
-    public List<TransporteORM> obtenerTransportes() {
-        return transporteRepository.findAll();
+    public List<TransporteDTO> obtenerTransportes() {
+        return transporteRepository.findAll().stream()
+                .map(transporte -> new TransporteDTO(
+                        transporte.getTransporte_id(),
+                        transporte.getAnimal().getAnimal_id(),
+                        transporte.getFincaOrigen().getFinca_id(),
+                        transporte.getFincaDestino().getFinca_id(),
+                        transporte.getFechaTransporte(),
+                        transporte.getMotivo()
+                )).collect(Collectors.toList());
     }
 
     public void agregarTransporte(TransporteORM transporte) {

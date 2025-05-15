@@ -1,5 +1,6 @@
 package com.example.fedegan.controller;
 
+import com.example.fedegan.dto.AnimalDTO;
 import com.example.fedegan.orm.AnimalORM;
 import com.example.fedegan.service.AnimalService;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class AnimalController {
 
     @GetMapping
     public ResponseEntity<?> obtenerAnimales() {
-        List<AnimalORM> animales = animalService.obtenerAnimales();
+        List<AnimalDTO> animales = animalService.obtenerAnimales();
         if (animales.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("No se encontraron animales registrados");

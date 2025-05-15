@@ -34,7 +34,7 @@ public class TransporteORM {
 
     @Column(name = "fecha_transporte")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date fecha_transporte;
+    private Date fechaTransporte;
 
     @Column(name = "motivo")
     private String motivo;

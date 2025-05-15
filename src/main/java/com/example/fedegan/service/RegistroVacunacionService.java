@@ -1,10 +1,13 @@
 package com.example.fedegan.service;
 
+import com.example.fedegan.dto.RegistroVacunacionDTO;
 import com.example.fedegan.orm.RegistroVacunacionORM;
+import com.example.fedegan.respository.AnimalRepository;
 import com.example.fedegan.respository.RegistroVacunacionRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RegistroVacunacionService {
@@ -14,8 +17,18 @@ public class RegistroVacunacionService {
         this.registroVacunacionRepository = registroVacunacionRepository;
     }
 
-    public List<RegistroVacunacionORM> obtenerRegistros() {
-        return registroVacunacionRepository.findAll();
+    public List<RegistroVacunacionDTO> obtenerRegistros() {
+        return registroVacunacionRepository.findAll().stream()
+                .map(registro -> new RegistroVacunacionDTO(
+                        registro.getRegistro_id(),
+                        registro.getVacunador().getVacunador_id(),
+                        registro.getAnimal().getAnimal_id(),
+                        registro.getCampania().getCampania_id(),
+                        registro.getFecha_aplicacion(),
+                        registro.getResultado(),
+                        registro.getObservaciones(),
+                        registro.isSincronizado()
+                )).collect(Collectors.toList());
     }
 
     public void agregarRegistro(RegistroVacunacionORM registro) {

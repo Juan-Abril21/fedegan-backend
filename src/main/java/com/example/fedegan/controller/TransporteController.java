@@ -1,5 +1,6 @@
 package com.example.fedegan.controller;
 
+import com.example.fedegan.dto.TransporteDTO;
 import com.example.fedegan.orm.TransporteORM;
 import com.example.fedegan.service.TransporteService;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class TransporteController {
 
     @GetMapping
     public ResponseEntity<?> obtenerTransportes() {
-        List<TransporteORM> transportes = transporteService.obtenerTransportes();
+        List<TransporteDTO> transportes = transporteService.obtenerTransportes();
         if (transportes.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontraron transportes registrados");
         } else {
@@ -50,7 +51,7 @@ public class TransporteController {
             if (transporte.getAnimal() == null ||
                     transporte.getFincaOrigen() == null ||
                     transporte.getFincaDestino() == null ||
-                    transporte.getFecha_transporte() == null ||
+                    transporte.getFechaTransporte() == null ||
                     transporte.getMotivo() == null || transporte.getMotivo().isEmpty()) {
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -107,7 +108,7 @@ public class TransporteController {
             if (transporte.getAnimal() == null ||
                     transporte.getFincaOrigen() == null ||
                     transporte.getFincaDestino() == null ||
-                    transporte.getFecha_transporte() == null ||
+                    transporte.getFechaTransporte() == null ||
                     transporte.getMotivo() == null || transporte.getMotivo().isEmpty()) {
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
