@@ -49,9 +49,9 @@ jobs:
           echo Current directory:
           cd
           echo Files in newrelic directory:
-          dir %HOME%\site\wwwroot\newrelic
+          dir D:\home\site\wwwroot\newrelic
           
-          java -javaagent:"%HOME%\site\wwwroot\newrelic\newrelic.jar" -jar "%HOME%\site\wwwroot\app.jar"
+          java -javaagent:"D:\home\site\wwwroot\newrelic\newrelic.jar" -jar "D:\home\site\wwwroot\app.jar"
           EOL
           
           # Hacer el script ejecutable (no necesario para .bat)
@@ -123,7 +123,7 @@ jobs:
           app-settings-json: '[
             {
               "name": "JAVA_TOOL_OPTIONS", 
-              "value": "-javaagent:%HOME%\\site\\wwwroot\\newrelic\\newrelic.jar", 
+              "value": "-javaagent:D:\\home\\site\\wwwroot\\newrelic\\newrelic.jar", 
               "slotSetting": false
             },
             {
